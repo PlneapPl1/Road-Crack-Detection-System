@@ -1,0 +1,388 @@
+function finalMask = postprocessMask( rawMask, methodName, cfg, grayImage)
+
+% Inputs: rawMask, methodName, cfg, grayImage
+
+% Output: finalMask
+
+    arguments
+        rawMask
+        methodName {mustBeTextScalar}
+        cfg struct
+        grayImage = []
+    end
+
+    % Validate raw mask
+    if isempty(rawMask)
+        error( 'postprocessMask:EmptyInput', 'The raw mask is empty.');
+    end
+
+    if ~ismatrix(rawMask)
+        error( 'postprocessMask:InvalidMask', 'The raw mask must be a 2-D image.');
+    end
+
+    rawMask = logical(rawMask);
+
+    methodName = lower(char(methodName));
+
+    % Otsu and Canny require grayscale input
+    if ismember(methodName, {'otsu', 'canny'})
+
+        if isempty(grayImage)
+            error( 'postprocessMask:MissingGrayImage', ...
+                ['grayImage is required for the updated ', ...
+                '%s post-processing pipeline.'], methodName);
+        end
+
+        if ~ismatrix(grayImage)
+            error( 'postprocessMask:InvalidGrayImage', ...
+                'grayImage must be a 2-D grayscale image.');
+        end
+
+        if islogical(grayImage)
+
+            grayImage = double(grayImage);
+
+        elseif isinteger(grayImage)
+
+            grayImage = im2double(grayImage);
+
+        else
+
+            grayImage = im2double(mat2gray(grayImage));
+
+        end
+
+    end
+
+    switch methodName
+
+        case 'otsu'
+
+            P = cfg.otsu;
+
+            % Gaussian smoothing
+            otsuInput = imgaussfilt( grayImage, P.gaussianSigma);
+
+            % Global Otsu level
+            otsuLevel = graythresh(otsuInput);
+
+            % Strong seeds
+            seedThreshold = min( otsuLevel * P.seedFactor, ...
+                quantile(otsuInput(:), P.seedCap));
+
+            % Weak growth candidates
+            growThreshold = min( otsuLevel * P.growFactor, ...
+                quantile(otsuInput(:), P.growCap));
+
+            strongSeed = otsuInput < seedThreshold;
+            weakCandidate = otsuInput < growThreshold;
+
+            % Seeded reconstruction
+            finalMask = imreconstruct( strongSeed, ...
+                weakCandidate, 8);
+
+            finalMask = bwareaopen( finalMask, P.minArea);
+
+            finalMask = bwmorph( finalMask, 'bridge');
+
+            finalMask = imclose( finalMask, strel('disk', P.closeRadius, 0));
+
+            finalMask = bwareaopen( finalMask, P.minArea);
+
+
+        case 'sauvola'
+
+            % Validate configuration
+            if ~isfield(cfg, 'sauvola') || ...
+                    ~isfield(cfg.sauvola, 'outputSize')
+
+                error( ...
+                    'postprocessMask:MissingSauvolaConfig', ...
+                    'The configuration does not contain cfg.sauvola.outputSize.');
+
+            end
+
+            requiredFields = { ...
+                'sauvolaMinArea', ...
+                'sauvolaClosingRadius', ...
+                'sauvolaUseShapeFilter'};
+
+            for fieldIndex = 1:numel(requiredFields)
+
+                if ~isfield(cfg.post, requiredFields{fieldIndex})
+
+                    error( ...
+                        'postprocessMask:MissingSauvolaPostParameter', ...
+                        'Missing Sauvola post-processing parameter: cfg.post.%s', ...
+                        requiredFields{fieldIndex});
+
+                end
+
+            end
+
+            % Aspect ratio is required only when shape filtering is enabled
+            if cfg.post.sauvolaUseShapeFilter && ...
+                    ~isfield(cfg.post, 'sauvolaMinAspectRatio')
+
+                error( ...
+                    'postprocessMask:MissingSauvolaAspectRatio', ...
+                    ['cfg.post.sauvolaMinAspectRatio is required ', ...
+                    'when Sauvola shape filtering is enabled.']);
+
+            end
+
+            % Process at 360-by-640 because minArea = 300 was tuned
+            % at this resolution
+            originalMaskSize = size(rawMask);
+
+            if originalMaskSize(1) > originalMaskSize(2)
+                processingSize = fliplr(cfg.sauvola.outputSize);
+            else
+                processingSize = cfg.sauvola.outputSize;
+            end
+
+            workingMask = imresize( ...
+                rawMask, ...
+                processingSize, ...
+                'nearest');
+
+            workingMask = logical(workingMask);
+
+            % Remove small connected regions
+            if cfg.post.sauvolaMinArea > 0
+
+                workingMask = bwareaopen( ...
+                    workingMask, ...
+                    cfg.post.sauvolaMinArea, ...
+                    8);
+
+            end
+
+            % Morphological closing
+            if cfg.post.sauvolaClosingRadius > 0
+
+                structuringElement = strel( ...
+                    'disk', ...
+                    cfg.post.sauvolaClosingRadius, ...
+                    0);
+
+                workingMask = imclose( ...
+                    workingMask, ...
+                    structuringElement);
+
+            end
+
+            % Shape filtering based on component aspect ratio
+            if cfg.post.sauvolaUseShapeFilter
+
+                connectedComponents = bwconncomp( ...
+                    workingMask, ...
+                    8);
+
+                if connectedComponents.NumObjects == 0
+
+                    workingMask = false(size(workingMask));
+
+                else
+
+                    statistics = regionprops( ...
+                        connectedComponents, ...
+                        'MajorAxisLength', ...
+                        'MinorAxisLength');
+
+                    keepComponent = false( ...
+                        connectedComponents.NumObjects, ...
+                        1);
+
+                    for componentIndex = ...
+                            1:connectedComponents.NumObjects
+
+                        majorLength = ...
+                            statistics(componentIndex).MajorAxisLength;
+
+                        minorLength = ...
+                            statistics(componentIndex).MinorAxisLength;
+
+                        aspectRatio = ...
+                            majorLength / max(minorLength, eps);
+
+                        if aspectRatio >= ...
+                                cfg.post.sauvolaMinAspectRatio
+
+                            keepComponent(componentIndex) = true;
+
+                        end
+
+                    end
+
+                    labelImage = labelmatrix(connectedComponents);
+
+                    labelsToKeep = find(keepComponent);
+
+                    workingMask = ismember( ...
+                        labelImage, ...
+                        labelsToKeep);
+
+                end
+
+            end
+
+            % Restore the mask to the original input size
+            finalMask = imresize( ...
+                workingMask, ...
+                originalMaskSize, ...
+                'nearest');
+
+
+        case 'canny'
+
+            P = cfg.canny;
+
+            % Pre-smoothing
+            cannyInput = imgaussfilt( grayImage, P.preGaussianSigma);
+
+            % Canny edges
+            cannyEdges = edge( cannyInput, 'Canny', [], P.internalSigma);
+
+            % Local mean and standard deviation
+            localMean = imboxfilt( grayImage, P.darkWindow);
+
+            localSquareMean = imboxfilt( grayImage .^ 2, P.darkWindow);
+
+            localStd = sqrt(max( localSquareMean - localMean .^ 2, 0));
+
+            % Locally dark pixels
+            darkCandidate = grayImage < (localMean - P.darkStdFactor .* localStd);
+
+            % Spatial support near Canny edges
+            edgeSupport = imdilate( cannyEdges, strel('disk', P.supportRadius, 0));
+
+            finalMask = darkCandidate & edgeSupport;
+
+            % Produce thin connected crack structures
+            finalMask = bwmorph( finalMask, 'thin', Inf);
+
+            finalMask = bwpropfilt( finalMask, 'Area', [P.minLength Inf]);
+
+            finalMask = bwmorph( finalMask, 'spur', P.spurIterations);
+
+            finalMask = imclose( finalMask, strel('disk', P.closeRadius, 0));
+
+            finalMask = imdilate( finalMask, strel('disk', P.outputRadius, 0));
+
+            finalMask = bwareaopen( finalMask, P.minLength);
+
+
+        case {'u-net', 'unet'}
+
+            if cfg.post.useAggressiveUNetPost
+
+                finalMask = connectedComponentShapeFilter( ...
+                    rawMask,...
+                    cfg.post.unetCC);
+
+            else
+
+                finalMask = rawMask;
+
+                finalMask = bwareaopen( ...
+                    finalMask,...
+                    cfg.post.unetSimpleMinArea,...
+                    8);
+
+                if cfg.post.unetSimpleClosingRadius > 0
+
+                    finalMask = imclose( ...
+                        finalMask,...
+                        strel('disk',...
+                        cfg.post.unetSimpleClosingRadius,...
+                        0));
+                end
+            end
+
+        otherwise
+
+            error( ...
+                'postprocessMask:UnknownMethod', ...
+                'Unsupported post-processing method: %s', ...
+                methodName);
+
+    end      
+
+    finalMask = logical(finalMask);
+
+end
+
+
+function finalMask = connectedComponentShapeFilter(rawMask, params)
+
+    rawMask = logical(rawMask);
+
+    mask = bwareaopen( ...
+        rawMask, ...
+        params.initialAreaRemove);
+
+    connectedComponents = bwconncomp(mask, 8);
+
+    if connectedComponents.NumObjects == 0
+        finalMask = false(size(rawMask));
+        return;
+    end
+
+    stats = regionprops( ...
+        connectedComponents, ...
+        'Area', ...
+        'Eccentricity', ...
+        'MajorAxisLength', ...
+        'MinorAxisLength', ...
+        'Solidity', ...
+        'Extent', ...
+        'BoundingBox');
+
+    keepMask = false(size(mask));
+
+    for k = 1:connectedComponents.NumObjects
+
+        areaValue = stats(k).Area;
+
+        if areaValue < params.minArea
+            continue;
+        end
+
+        majorLength = stats(k).MajorAxisLength;
+        minorLength = stats(k).MinorAxisLength;
+        eccentricity = stats(k).Eccentricity;
+
+        bbox = stats(k).BoundingBox;
+
+        axisAspectRatio = ...
+            majorLength / max(minorLength, 1);
+
+        boxAspectRatio = ...
+            max(bbox(3), bbox(4)) / ...
+            max(min(bbox(3), bbox(4)), 1);
+
+        isCrackLike = ...
+            majorLength >= params.minMajorLength && ...
+            eccentricity >= params.minEccentricity && ...
+            (axisAspectRatio >= params.minAspectRatio || ...
+             boxAspectRatio >= params.minAspectRatio);
+
+        isCompactBlob = ...
+            stats(k).Solidity > params.compactSolidity && ...
+            stats(k).Extent > params.compactExtent && ...
+            boxAspectRatio < params.maxCompactAspectRatio;
+
+        if isCrackLike && ~isCompactBlob
+            keepMask( ...
+                connectedComponents.PixelIdxList{k}) = true;
+        end
+    end
+
+    finalMask = bwareaopen( ...
+        keepMask, ...
+        params.finalAreaRemove);
+
+    finalMask = logical(finalMask);
+
+end
