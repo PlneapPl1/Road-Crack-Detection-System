@@ -2,14 +2,7 @@
 
 An integrated MATLAB platform for road crack detection, method comparison, quantitative evaluation, visualization, and automatic result export.
 
-
-<p align="center">
-  <img src="data/images/hero.png" width="85%">
-</p>
-
-<p align="center">
-<b>Figure 1.</b> MATLAB App Designer interface.
-</p>
+<img width="1500" height="916" alt="hero" src="https://github.com/user-attachments/assets/4757fec1-102a-446e-a296-f9596f042531" />
 
 ---
 
@@ -37,25 +30,13 @@ Modular software architecture for easy extension.
 
 ## Features
 
-<p align="center">
-  <img src="data/images/features.png" width="35%">
-</p>
-
-<p align="center">
-<b>Figure 2.</b> Major functional modules of the Road Crack Detection System.
-</p>
+<img width="465" height="465" alt="features" src="https://github.com/user-attachments/assets/f801489f-fa4b-473c-b643-491cd3b5bd84" />
 
 ---
 
 ## Workflow
 
-<p align="center">
-  <img src="data/images/work flow.png" width="105%">
-</p>
-
-<p align="center">
-<b>Figure 3.</b> Overall processing pipeline.
-</p>
+<img width="1092" height="355" alt="work flow" src="https://github.com/user-attachments/assets/bdaac8cf-602e-47b3-9d12-71602db08f65" />
 
 The pipeline begins by loading and validating a road image, then applies the pre-processing operations required by the selected detector. Detection is performed using one of the three classical methods or the U-Net model. Optional post-processing refines the initial binary mask by suppressing noise and retaining crack-like structures. When a matching ground-truth mask is available, the system evaluates the prediction and generates supporting visualizations such as overlays and error maps. Images, masks, figures, and tabular metrics can then be exported in an organized form for later analysis or reporting.
 
@@ -63,13 +44,7 @@ The pipeline begins by loading and validating a road image, then applies the pre
 
 ## Project Architecture
 
-<p align="center">
-  <img src="data/images/Software Architecture .png" width="75%">
-</p>
-
-<p align="center">
-<b>Figure 4.</b> Overall Software Architecture.
-</p>
+<img width="808" height="413" alt="Software Architecture " src="https://github.com/user-attachments/assets/05ac9f9c-a7bf-48f3-a142-d538d0e1a6d3" />
 
 | Module | Responsibility |
 |---|---|
@@ -89,8 +64,6 @@ The pipeline begins by loading and validating a road image, then applies the pre
 ```text
 Main crack project/
 ├── cfg/                 # Configuration, paths, and shared parameters
-├── data/                # Test set and train set
-├── images/              # Screenshots of App and reults
 ├── src/
 │   ├── m0_data/         # Data loading and dataset utilities
 │   ├── m1_pre/          # Image pre-processing
@@ -100,11 +73,10 @@ Main crack project/
 │   ├── m5_eval/         # Evaluation and visualization
 │   └── m6_app/          # MATLAB App Designer integration
 ├── scripts/             # Setup, training, testing, and utility scripts
-├── results/             # Exported masks, figures, metrics, and reports
+├── example results/     # Exported masks, figures, metrics, and reports
 ├── test/                # Scripts for testing if the src file is valid
-├── Update Log.txt/
-├── 更新日志.txt/
-└── README.md            # Project documentation
+└── Update Log.txt/
+
 ```
 
 The structure separates configuration, data management, algorithm development, evaluation, and user-interface code. This organization allows individual modules to be tested or extended without tightly coupling them to the application layer.
@@ -113,13 +85,7 @@ The structure separates configuration, data management, algorithm development, e
 
 ## Classical Pipeline
 
-<p align="center">
-  <img src="data/images/Classical Detection Pipeline.png" width="75%">
-</p>
-
-<p align="center">
-<b>Figure 5.</b> Classical Detection Pipeline.
-</p>
+<img width="946" height="521" alt="Classical Detection Pipeline" src="https://github.com/user-attachments/assets/70893f87-550c-4cb2-a3fa-7fafafc16d44" />
 
 The classical pipeline first normalizes the input into a suitable grayscale representation and applies any required contrast enhancement or noise reduction. It then uses one of three detection strategies:
 
@@ -133,13 +99,7 @@ The initial detector output can contain isolated noise, texture responses, or fr
 
 ## Deep Learning Pipeline
 
-<p align="center">
-  <img src="data/images/Deep Learning Pipeline.png" width="75%">
-</p>
-
-<p align="center">
-<b>Figure 6.</b> Deep Learning Pipeline.
-</p>
+<img width="1149" height="471" alt="Deep Learning Pipeline" src="https://github.com/user-attachments/assets/9ee7d93f-1f24-4a3c-8875-e2ce494b23f2" />
 
 The deep learning pipeline accepts a road image and prepares it for U-Net inference. Large images are divided into manageable, potentially overlapping windows. The network predicts a crack probability map for each window, and the local predictions are fused to reconstruct a probability map at the original image scale. Thresholding converts the fused probabilities into a binary segmentation mask. Connected-component filtering then removes unsuitable isolated regions and produces the final crack mask for visualization, evaluation, and export.
 
@@ -150,33 +110,15 @@ The deep learning pipeline accepts a road image and prepares it for U-Net infere
 
 ### Single Detection Mode
 
-<p align="center">
-  <img src="data/images/Single.png" width="85%">
-</p>
-
-<p align="center">
-<b>Figure 7.</b> Single Detection Mode.
-</p>
+<img width="915" height="557" alt="Single" src="https://github.com/user-attachments/assets/3b6dd4b3-b7e3-4154-8c1d-d9fa6eb00e19" />
 
 ### Compare Mode
 
-<p align="center">
-  <img src="data/images/Compare.png" width="85%">
-</p>
-
-<p align="center">
-<b>Figure 8.</b> Compare Detection Mode.
-</p>
+<img width="916" height="557" alt="Compare" src="https://github.com/user-attachments/assets/20055405-972e-4059-8a1c-d6ee17e1013b" />
 
 ### Batch Processing Mode
 
-<p align="center">
-  <img src="data/images/Batch.png" width="85%">
-</p>
-
-<p align="center">
-<b>Figure 9.</b> Batch Processing Mode.
-</p>
+<img width="861" height="505" alt="Batch" src="https://github.com/user-attachments/assets/3d358b26-4979-4779-9006-e911a10293c1" />
 
 ---
 
