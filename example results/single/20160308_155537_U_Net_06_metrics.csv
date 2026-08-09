@@ -1,0 +1,2 @@
+IoU,Precision,Recall,F1Score,Accuracy,ProcessingTimeSeconds,Method,PostprocessingApplied,InputImagePath,GroundTruthPath
+0.78734913062746,0.908548938855492,0.965755098205056,0.93627901591095,0.995550401475694,3.4698166,U-Net,1,D:\ELEC 9773\Main crack project\data\testdata\20160308_155537.jpg,D:\ELEC 9773\Main crack project\data\testdata\20160308_155537_mask.png

@@ -1,0 +1,2 @@
+IoU,Precision,Recall,F1Score,Accuracy,ProcessingTimeSeconds,Method,PostprocessingApplied,InputImagePath,GroundTruthPath
+0.725247295923084,0.950955643707176,0.84564075320229,0.895211465624495,0.986095505617978,1.0541192,U-Net,1,D:\ELEC 9773\E crack\3.jpg,D:\ELEC 9773\E crack\3.png

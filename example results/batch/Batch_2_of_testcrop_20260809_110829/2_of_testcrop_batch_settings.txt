@@ -1,0 +1,9 @@
+Road Crack Detection Batch Processing
+Date: 09-Aug-2026 11:08:42
+Image Folder: D:\ELEC 9773\Main crack project\data\2 of testcrop
+Ground Truth Folder: D:\ELEC 9773\Main crack project\data\2 of testcrop
+Output Folder: D:\ELEC 9773\Main crack project\results\batch
+Post-processing Applied: true
+Cancelled: false
+Completed Result Rows: 8
+Methods Summarised: 4

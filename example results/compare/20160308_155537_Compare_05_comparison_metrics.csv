@@ -1,0 +1,5 @@
+Method,Precision,Recall,F1,IoU,TimeSeconds,PostprocessingApplied,InputImagePath,GroundTruthPath
+Otsu,0.657339518180458,0.830053566394136,0.733668882901315,0.515171445680236,0.3796185,1,D:\ELEC 9773\Main crack project\data\testdata\20160308_155537.jpg,D:\ELEC 9773\Main crack project\data\testdata\20160308_155537_mask.png
+Sauvola,0.537404499151104,0.983084296588666,0.694926428279933,0.470846621781243,0.1818088,1,D:\ELEC 9773\Main crack project\data\testdata\20160308_155537.jpg,D:\ELEC 9773\Main crack project\data\testdata\20160308_155537_mask.png
+Canny,0.0722799866535607,0.831256460858942,0.13299564408715,0.0601314816526481,1.3255153,1,D:\ELEC 9773\Main crack project\data\testdata\20160308_155537.jpg,D:\ELEC 9773\Main crack project\data\testdata\20160308_155537_mask.png
+U-Net,0.908548938855492,0.965755098205056,0.93627901591095,0.78734913062746,2.9304952,1,D:\ELEC 9773\Main crack project\data\testdata\20160308_155537.jpg,D:\ELEC 9773\Main crack project\data\testdata\20160308_155537_mask.png
